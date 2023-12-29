@@ -23,29 +23,20 @@ public class Tokenizer {
             "true",
             "false",
     }));
-    TokenNode<?> current;
+    private TokenNode<?> current;
 
     public Tokenizer(Parser parser) {
         this.parser = parser;
     }
 
     public TokenNode<?> peek() throws IOException {
-        TokenNode<?> out = current == null ? (current = readNext()) : current;
-        try {
-            System.out.println(out.toString());
-        } catch (NullPointerException e) {
-        }
-
-        return out;
+        return current == null ? (current = readNext()) : current;
     }
 
     public TokenNode<?> next() throws IOException {
         TokenNode<?> token = current;
         current = null;
-
-        TokenNode<?> out = token == null ? readNext() : token;
-        System.out.println(out.toString());
-        return out;
+        return token == null ? readNext() : token;
     }
 
     public boolean eof() throws IOException {
@@ -54,10 +45,11 @@ public class Tokenizer {
 
     private TokenNode<?> readNext() throws IOException {
         readWhile(ch -> isWhitespace(Utils.strToChar(ch)));
-        if (parser.eof())
+        if (parser.peek() == (char) -1)
             return null;
 
         char ch = parser.peek();
+
         if (ch == '#') {
             skipComment();
             return readNext();
@@ -111,19 +103,18 @@ public class Tokenizer {
 
     private String readWhile(Predicate<String> pred) throws IOException {
         String out = "";
-        while (!parser.eof() && pred.test(Utils.charToStr(parser.peek()))) {
-            out += parser.next();
-        }
+
+        do {
+            out += parser.peek();
+        } while (parser.next() != (char) -1 && pred.test(Utils.charToStr(parser.peek())));
+
         return out;
     }
 
-    private TokenNode<?> readNumber() throws IOException {
+    private TokenNode<Number> readNumber() throws IOException {
         AtomicBoolean hasDot = new AtomicBoolean(false);
 
-        System.out.println("readNum called");
         String num = readWhile((ch) -> {
-            System.out.println("pred called");
-
             if (ch == ".") {
                 if (hasDot.get())
                     return false;
@@ -132,18 +123,15 @@ public class Tokenizer {
             }
             return isDigit(ch);
         });
-
-        return new TokenNode<>(TokenType.NUM, Float.parseFloat(num));
+        if (!hasDot.get())
+            return new TokenNode<Number>(TokenType.NUM, Integer.parseInt(num));
+        return new TokenNode<Number>(TokenType.NUM, Float.parseFloat(num));
     }
 
     private TokenNode<?> readIdent() throws IOException {
         String id = readWhile(x -> {
-            System.out.println("pred called!");
-
             return isId(x);
         });
-        System.out.println(id);
-
         return new TokenNode<>(isKeyword(id) ? TokenType.KW : TokenType.VAR, id);
     }
 
@@ -152,8 +140,9 @@ public class Tokenizer {
         String str = "";
 
         parser.next();
-        while (!parser.eof()) {
-            char ch = parser.next();
+
+        char ch;
+        while ((ch = parser.next()) != (char) -1) {
             if (escaped) {
                 str += ch;
                 escaped = false;

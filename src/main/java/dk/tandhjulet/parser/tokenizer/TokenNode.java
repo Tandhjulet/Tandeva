@@ -21,7 +21,7 @@ public class TokenNode<T> {
 
     // assumes the generic type from the value
     @SuppressWarnings("unchecked")
-    public TokenNode(Enum<TokenType> type, Object value) {
+    public TokenNode(TokenType type, Object value) {
         this.clazz = (Class<T>) value.getClass();
 
         node.put("type", type);

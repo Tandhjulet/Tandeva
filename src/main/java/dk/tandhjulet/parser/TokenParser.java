@@ -47,19 +47,18 @@ public class TokenParser {
     @SuppressWarnings("unchecked")
     private ASTNode maybeBinary(ASTNode left, Integer prec) throws Exception {
         TokenNode<String> token = (TokenNode<String>) isOperator(null);
-        System.out.println("maybe binary");
         if (token != null) {
-            System.out.println("token not null: " + token.getValue());
-
             int tokenPrec = PRECEDENCE.get(token.getValue());
             if (tokenPrec > prec) {
                 tokenizer.next();
-                System.out.println("good prec");
 
+                ASTNode node;
                 if (token.getValue() == "=") {
-                    return new ASTAssign(left, maybeBinary(parseAtom(), tokenPrec));
+                    node = new ASTAssign(left, maybeBinary(parseAtom(), tokenPrec));
+                } else {
+                    node = new ASTBinary(token.getValue(), left, maybeBinary(parseAtom(), tokenPrec));
                 }
-                return new ASTBinary(token.getValue(), left, maybeBinary(parseAtom(), tokenPrec));
+                return maybeBinary(node, prec);
             }
         }
         return left;
@@ -171,11 +170,13 @@ public class TokenParser {
             }
 
             TokenNode<?> token = tokenizer.next();
-            if (token.getType() == TokenType.VAR)
+            System.out.println(token.getType());
+
+            if (token.getType().equals(TokenType.VAR))
                 return new ASTVariable(token.getValue(String.class));
-            else if (token.getType() == TokenType.NUM)
+            else if (token.getType().equals(TokenType.NUM))
                 return new ASTNumber(token.getValue(Number.class));
-            else if (token.getType() == TokenType.STR)
+            else if (token.getType().equals(TokenType.STR))
                 return new ASTString(token.getValue(String.class));
 
             unexpectedToken();
