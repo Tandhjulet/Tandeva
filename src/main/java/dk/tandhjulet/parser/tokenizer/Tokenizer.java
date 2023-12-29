@@ -6,8 +6,11 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 
 import dk.tandhjulet.parser.Parser;
+import dk.tandhjulet.parser.ParserException;
+import dk.tandhjulet.utils.Regex;
 import dk.tandhjulet.utils.Utils;
 
 public class Tokenizer {
@@ -27,25 +30,26 @@ public class Tokenizer {
     }
 
     public TokenNode<?> peek() throws IOException {
-        return current == null ? (current = readNext()) : current;
+        TokenNode<?> out = current == null ? (current = readNext()) : current;
+        try {
+            System.out.println(out.toString());
+        } catch (NullPointerException e) {
+        }
+
+        return out;
     }
 
     public TokenNode<?> next() throws IOException {
         TokenNode<?> token = current;
         current = null;
-        return token == null ? readNext() : token;
+
+        TokenNode<?> out = token == null ? readNext() : token;
+        System.out.println(out.toString());
+        return out;
     }
 
     public boolean eof() throws IOException {
         return peek() == null;
-    }
-
-    public void croak(String msg, Throwable err) {
-        parser.croak(msg, err);
-    }
-
-    public void croak(String msg) {
-        parser.croak(msg);
     }
 
     private TokenNode<?> readNext() throws IOException {
@@ -63,15 +67,14 @@ public class Tokenizer {
             return readString();
         else if (isDigit(ch))
             return readNumber();
-        else if (isIdStart(ch))
+        else if (isIdStart(Utils.charToStr(ch)))
             return readIdent();
         else if (isPunc(ch))
-            return new TokenNode<>(TokenType.PUNC, parser.next());
+            return new TokenNode<>(TokenType.PUNC, Utils.charToStr(parser.next()));
         else if (isOperator(ch))
             return new TokenNode<>(TokenType.OP, readWhile(op -> isOperator(Utils.strToChar(op))));
 
-        parser.croak("Cannot read character: " + ch + "!");
-        return null;
+        throw new ParserException("Cannot read character: " + ch + "!");
     }
 
     private boolean isKeyword(String kw) {
@@ -79,22 +82,18 @@ public class Tokenizer {
     }
 
     private boolean isDigit(char ch) {
-        return isDigit(Utils.charToStr(ch));
+        return Regex.matches("[0-9]", ch, Pattern.CASE_INSENSITIVE);
     }
 
     private boolean isDigit(String str) {
-        return str.matches("[0-9]");
+        return Regex.matches("[0-9]", str, Pattern.CASE_INSENSITIVE);
     }
 
-    private boolean isIdStart(char ch) {
-        return isIdStart(Utils.charToStr(ch));
+    private boolean isIdStart(String ch) {
+        return Regex.matches("[a-z_]", ch, Pattern.CASE_INSENSITIVE);
     }
 
-    private boolean isIdStart(String str) {
-        return "[a-zA-Z]".matches(str);
-    }
-
-    private boolean isId(char ch) {
+    private boolean isId(String ch) {
         return isIdStart(ch) || "?!-<>=0123456789".indexOf(ch) >= 0;
     }
 
@@ -120,7 +119,11 @@ public class Tokenizer {
 
     private TokenNode<?> readNumber() throws IOException {
         AtomicBoolean hasDot = new AtomicBoolean(false);
+
+        System.out.println("readNum called");
         String num = readWhile((ch) -> {
+            System.out.println("pred called");
+
             if (ch == ".") {
                 if (hasDot.get())
                     return false;
@@ -129,11 +132,17 @@ public class Tokenizer {
             }
             return isDigit(ch);
         });
+
         return new TokenNode<>(TokenType.NUM, Float.parseFloat(num));
     }
 
     private TokenNode<?> readIdent() throws IOException {
-        String id = readWhile(x -> isId(Utils.strToChar(x)));
+        String id = readWhile(x -> {
+            System.out.println("pred called!");
+
+            return isId(x);
+        });
+        System.out.println(id);
 
         return new TokenNode<>(isKeyword(id) ? TokenType.KW : TokenType.VAR, id);
     }

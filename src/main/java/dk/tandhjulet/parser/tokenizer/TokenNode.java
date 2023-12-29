@@ -19,7 +19,7 @@ public class TokenNode<T> {
         return "{type:" + getType().toString() + ",value:" + getValue().toString() + "}";
     }
 
-    // attempts to guess the generic type from the value
+    // assumes the generic type from the value
     @SuppressWarnings("unchecked")
     public TokenNode(Enum<TokenType> type, Object value) {
         this.clazz = (Class<T>) value.getClass();
@@ -41,8 +41,8 @@ public class TokenNode<T> {
         try {
             Object value = node.get("value");
             return clazz.cast(value);
-        } catch (Exception e) {
-            System.err.println("getValue cannot cast value to " + clazz.getName());
+        } catch (ClassCastException e) {
+            System.out.println("getvalue called with invalid class. failing silently.");
             return null;
         }
     }

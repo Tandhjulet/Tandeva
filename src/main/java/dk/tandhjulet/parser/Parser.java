@@ -3,20 +3,18 @@ package dk.tandhjulet.parser;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 
 public class Parser extends InputStreamReader {
     private char curr;
 
-    public Parser(InputStream i) {
-        super(i);
-    }
+    public Parser(InputStream i) throws IOException {
+        super(i, StandardCharsets.UTF_8);
 
-    public void croak(String msg, Throwable err) {
-        throw new ParserException(msg, err);
-    }
+        while (!super.ready()) {
+        }
 
-    public void croak(String msg) {
-        throw new ParserException(msg);
+        next();
     }
 
     /**

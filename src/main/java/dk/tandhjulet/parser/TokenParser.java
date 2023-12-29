@@ -47,14 +47,19 @@ public class TokenParser {
     @SuppressWarnings("unchecked")
     private ASTNode maybeBinary(ASTNode left, Integer prec) throws Exception {
         TokenNode<String> token = (TokenNode<String>) isOperator(null);
+        System.out.println("maybe binary");
         if (token != null) {
+            System.out.println("token not null: " + token.getValue());
+
             int tokenPrec = PRECEDENCE.get(token.getValue());
             if (tokenPrec > prec) {
                 tokenizer.next();
+                System.out.println("good prec");
+
                 if (token.getValue() == "=") {
                     return new ASTAssign(left, maybeBinary(parseAtom(), tokenPrec));
                 }
-                return new ASTBinary(null, left, maybeBinary(parseAtom(), tokenPrec));
+                return new ASTBinary(token.getValue(), left, maybeBinary(parseAtom(), tokenPrec));
             }
         }
         return left;
@@ -136,7 +141,7 @@ public class TokenParser {
     private String parseVarName() throws IOException {
         TokenNode<?> name = tokenizer.next();
         if (name.getType() != TokenType.VAR)
-            tokenizer.croak("Expected variable name");
+            throw new ParserException("Expected variable name");
         return name.getValue(String.class);
     }
 
@@ -202,18 +207,18 @@ public class TokenParser {
         if (isPunc(ch) != null)
             tokenizer.next();
         else
-            tokenizer.croak("Expecting punctuation: \"" + ch + "\"");
+            throw new ParserException("Expecting punctuation: \"" + ch + "\"");
     }
 
     private void skipKeyword(String kw) throws IOException {
         if (isKeyword(kw) != null)
             tokenizer.next();
         else
-            tokenizer.croak("Expecting keyword: \"" + kw + "\"");
+            throw new ParserException("Expecting keyword: \"" + kw + "\"");
     }
 
     private void unexpectedToken() throws IOException {
-        tokenizer.croak("Unexpected token: " + tokenizer.peek().toString());
+        throw new ParserException("Unexpected token: " + tokenizer.peek().toString());
     }
 
     static {

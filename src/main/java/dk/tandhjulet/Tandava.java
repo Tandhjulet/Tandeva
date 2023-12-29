@@ -11,7 +11,7 @@ public class Tandava {
     public static void main(String[] args) {
         try {
             // debug
-            String code = "a = 5; b = 10;";
+            String code = "5*4";
             InputStream stream = new ByteArrayInputStream(code.getBytes());
 
             Parser parser = new Parser(stream);
