@@ -36,6 +36,7 @@ public class Tokenizer {
     public TokenNode<?> next() throws IOException {
         TokenNode<?> token = current;
         current = null;
+
         return token == null ? readNext() : token;
     }
 
@@ -45,11 +46,11 @@ public class Tokenizer {
 
     private TokenNode<?> readNext() throws IOException {
         readWhile(ch -> isWhitespace(Utils.strToChar(ch)));
-        if (parser.peek() == (char) -1)
+        if (parser.eof()) {
             return null;
+        }
 
         char ch = parser.peek();
-
         if (ch == '#') {
             skipComment();
             return readNext();
@@ -86,7 +87,7 @@ public class Tokenizer {
     }
 
     private boolean isId(String ch) {
-        return isIdStart(ch) || "?!-<>=0123456789".indexOf(ch) >= 0;
+        return isIdStart(ch) || "?!-<:>0123456789".indexOf(ch) >= 0;
     }
 
     private boolean isOperator(char ch) {
@@ -104,9 +105,9 @@ public class Tokenizer {
     private String readWhile(Predicate<String> pred) throws IOException {
         String out = "";
 
-        do {
-            out += parser.peek();
-        } while (parser.next() != (char) -1 && pred.test(Utils.charToStr(parser.peek())));
+        while (!parser.eof() && pred.test(Utils.charToStr(parser.peek()))) {
+            out += parser.next();
+        }
 
         return out;
     }
@@ -123,16 +124,17 @@ public class Tokenizer {
             }
             return isDigit(ch);
         });
+
         if (!hasDot.get())
             return new TokenNode<Number>(TokenType.NUM, Integer.parseInt(num));
         return new TokenNode<Number>(TokenType.NUM, Float.parseFloat(num));
     }
 
-    private TokenNode<?> readIdent() throws IOException {
+    private TokenNode<String> readIdent() throws IOException {
         String id = readWhile(x -> {
             return isId(x);
         });
-        return new TokenNode<>(isKeyword(id) ? TokenType.KW : TokenType.VAR, id);
+        return new TokenNode<String>(isKeyword(id) ? TokenType.KW : TokenType.VAR, id);
     }
 
     private String readEscaped(char end) throws IOException {
@@ -141,8 +143,9 @@ public class Tokenizer {
 
         parser.next();
 
-        char ch;
-        while ((ch = parser.next()) != (char) -1) {
+        while (!parser.eof()) {
+            char ch = parser.next();
+
             if (escaped) {
                 str += ch;
                 escaped = false;

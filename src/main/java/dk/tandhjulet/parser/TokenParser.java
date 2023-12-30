@@ -170,7 +170,6 @@ public class TokenParser {
             }
 
             TokenNode<?> token = tokenizer.next();
-            System.out.println(token.getType());
 
             if (token.getType().equals(TokenType.VAR))
                 return new ASTVariable(token.getValue(String.class));

@@ -25,8 +25,17 @@ public class Parser extends InputStreamReader {
      * @return The next char of the input stream
      * @throws IOException
      */
-    public char next() throws IOException {
-        this.curr = (char) super.read();
-        return curr;
+    public synchronized char next() throws IOException {
+        char holder = this.curr;
+        this.curr = (char) read();
+        return holder;
+    }
+
+    /**
+     * @return true if the end of the file has been reaced, otherwise false
+     * @throws IOException
+     */
+    public boolean eof() throws IOException {
+        return peek() == (char) -1;
     }
 }
