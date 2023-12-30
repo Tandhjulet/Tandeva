@@ -1,7 +1,7 @@
 package dk.tandhjulet.parser;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.lang.reflect.Array;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -26,6 +26,7 @@ import dk.tandhjulet.parser.tokenizer.TokenType;
 import dk.tandhjulet.parser.tokenizer.Tokenizer;
 
 public class TokenParser {
+    private static final ASTNode FALSE = new ASTBoolean(false);
     private static final Map<String, Integer> PRECEDENCE = new HashMap<>();
 
     private final Tokenizer tokenizer;
@@ -53,7 +54,7 @@ public class TokenParser {
                 tokenizer.next();
 
                 ASTNode node;
-                if (token.getValue() == "=") {
+                if (token.getValue().equals("=")) {
                     node = new ASTAssign(left, maybeBinary(parseAtom(), tokenPrec));
                 } else {
                     node = new ASTBinary(token.getValue(), left, maybeBinary(parseAtom(), tokenPrec));
@@ -71,8 +72,9 @@ public class TokenParser {
     }
 
     @SuppressWarnings("unchecked")
-    private <T> T[] delimited(String start, String stop, String seperator, Callable<T> callable)
+    private <T> T[] delimited(String start, String stop, String seperator, Callable<T> callable, Class<T> clazz)
             throws Exception {
+
         Set<T> variables = new HashSet<>();
         boolean first = true;
 
@@ -92,13 +94,14 @@ public class TokenParser {
             variables.add(callable.call());
         }
         skipPunc(stop);
-        return (T[]) variables.toArray();
+
+        return variables.toArray((T[]) Array.newInstance(clazz, 0));
     }
 
     private ASTNode parseCall(ASTNode call) throws Exception {
         return new ASTCall(call, delimited("(", ")", ",", () -> {
             return parseExpression();
-        }));
+        }, ASTNode.class));
     }
 
     private ASTNode maybeCall(Callable<ASTNode> expr) throws Exception {
@@ -107,16 +110,16 @@ public class TokenParser {
     }
 
     private ASTNode parseProg() throws Exception {
-        List<ASTNode> prog = Arrays.asList(delimited("{", "}", ";", () -> {
+        ASTNode[] prog = delimited("{", "}", ";", () -> {
             return parseExpression();
-        }));
+        }, ASTNode.class);
 
-        while (!tokenizer.eof()) {
-            prog.add(parseExpression());
-            if (!tokenizer.eof())
-                skipPunc(";");
-        }
-        return new ASTProg(prog.toArray(new ASTNode[0]));
+        if (prog.length == 0)
+            return FALSE;
+        else if (prog.length == 1)
+            return prog[0];
+
+        return new ASTProg(prog);
     }
 
     private ASTNode parseIf() throws Exception {
@@ -134,7 +137,7 @@ public class TokenParser {
     }
 
     private ASTNode parseBool() throws IOException {
-        return new ASTBoolean(tokenizer.next().getValue(String.class) == "true");
+        return new ASTBoolean(tokenizer.next().getValue(String.class).equals("true"));
     }
 
     private String parseVarName() throws IOException {
@@ -145,9 +148,11 @@ public class TokenParser {
     }
 
     private ASTNode parseLambda() throws Exception {
-        return new ASTLambda(parseExpression(), delimited("(", ")", ",", () -> {
+        String[] delimited = delimited("(", ")", ",", () -> {
             return parseVarName();
-        }));
+        }, String.class);
+
+        return new ASTLambda(parseExpression(), delimited);
     }
 
     private ASTNode parseAtom() throws Exception {
@@ -186,21 +191,23 @@ public class TokenParser {
     private TokenNode<?> isPunc(String ch) throws IOException {
         TokenNode<?> token = tokenizer.peek();
         return (token != null && token.getType() == TokenType.PUNC
-                && (ch == null || token.getValue(String.class) == ch)) ? token : null;
+                && (ch == null || token.getValue(String.class).equals(ch))) ? token : null;
     }
 
     private TokenNode<?> isKeyword(String kw) throws IOException {
         TokenNode<?> token = tokenizer.peek();
-        return (token != null && token.getType() == TokenType.KW && (kw == null || token.getValue(String.class) == kw))
-                ? token
-                : null;
+        return (token != null && token.getType() == TokenType.KW
+                && (kw == null || token.getValue(String.class).equals(kw)))
+                        ? token
+                        : null;
     }
 
     private TokenNode<?> isOperator(String op) throws IOException {
         TokenNode<?> token = tokenizer.peek();
-        return (token != null && token.getType() == TokenType.OP && (op == null || token.getValue(String.class) == op))
-                ? token
-                : null;
+        return (token != null && token.getType() == TokenType.OP
+                && (op == null || token.getValue(String.class).equals(op)))
+                        ? token
+                        : null;
     }
 
     private void skipPunc(String ch) throws IOException {

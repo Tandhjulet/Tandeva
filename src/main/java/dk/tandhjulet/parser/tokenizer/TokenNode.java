@@ -26,8 +26,6 @@ public class TokenNode<T> {
 
         node.put("type", type);
         node.put("value", value);
-
-        System.out.println(toString());
     }
 
     public TokenType getType() {

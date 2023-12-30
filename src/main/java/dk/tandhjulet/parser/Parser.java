@@ -22,7 +22,9 @@ public class Parser extends InputStreamReader {
     }
 
     /**
-     * @return The next char of the input stream
+     * Returns the current char and afterwards advances the stream
+     * 
+     * @return the current char
      * @throws IOException
      */
     public synchronized char next() throws IOException {
