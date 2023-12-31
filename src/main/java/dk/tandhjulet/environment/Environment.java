@@ -2,6 +2,7 @@ package dk.tandhjulet.environment;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.function.Function;
 
 public class Environment {
     private final Environment parent;
@@ -41,5 +42,9 @@ public class Environment {
 
     public Object define(String varName, Object value) {
         return this.vars.put(varName, value);
+    }
+
+    public void defineFunction(String varName, Function<Object[], Object> func) {
+        this.vars.put(varName, func);
     }
 }

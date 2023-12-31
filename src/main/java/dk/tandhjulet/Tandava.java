@@ -14,7 +14,7 @@ public class Tandava {
     public static void main(String[] args) {
         try {
             // debug
-            String code = "sum = lambda(x, y) x + y; sum(5,4)";
+            String code = "sum = lambda(x, y) x + y; print(sum(5,4));";
             InputStream stream = new ByteArrayInputStream(code.getBytes());
 
             Parser parser = new Parser(stream);
@@ -28,6 +28,15 @@ public class Tandava {
             System.out.println(program.toString() + "\n");
 
             Environment env = new Environment(null);
+
+            env.defineFunction("print", (printArgs) -> {
+                for (Object arg : printArgs) {
+                    System.out.println(arg.toString());
+                }
+
+                return null;
+            });
+
             Evaluator.evaluate(program, env);
 
             System.out.println("\nPROGRAM has ran!");
